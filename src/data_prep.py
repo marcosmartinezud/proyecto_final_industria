@@ -1,6 +1,5 @@
 import pandas as pd
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
 
 def main(in_path='data/ai4i2020.csv', out_path='data/ai4i_clean.csv'):
 	df = pd.read_csv(in_path)
@@ -11,8 +10,6 @@ def main(in_path='data/ai4i2020.csv', out_path='data/ai4i_clean.csv'):
 	imputer = SimpleImputer(strategy='median')
 	df[num_cols] = imputer.fit_transform(df[num_cols])
 
-	scaler = StandardScaler()
-	df[num_cols] = scaler.fit_transform(df[num_cols])
 	df.to_csv(out_path, index=False)
 	print("Saved", out_path)
 
