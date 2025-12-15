@@ -1,0 +1,7 @@
+# Keep this aligned with the root requirements.txt
+pandas
+numpy
+scikit-learn
+joblib
+bentoml
+

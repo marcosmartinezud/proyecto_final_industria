@@ -1,37 +1,100 @@
-"""Feature engineering helpers."""
+"""Feature engineering and preprocessing pipeline.
+
+Key design choice:
+- We build a scikit-learn Pipeline that includes feature creation + preprocessing.
+- This avoids data leakage (fit only on train) and makes inference reproducible.
+"""
+
+from __future__ import annotations
 
 from typing import Sequence
 
+import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 
 
-NUMERIC_FEATURES: Sequence[str] = [
-    'Air temperature [K]',
-    'Process temperature [K]',
-    'Rotational speed [rpm]',
-    'Torque [Nm]',
-    'Tool wear [min]',
-    'Temp_diff',
-    'Torque_per_rpm'
+RAW_NUMERIC_COLS: Sequence[str] = [
+    "Air temperature [K]",
+    "Process temperature [K]",
+    "Rotational speed [rpm]",
+    "Torque [Nm]",
+    "Tool wear [min]",
 ]
 
+RAW_CATEGORICAL_COLS: Sequence[str] = [
+    "Type",
+]
 
-CATEGORICAL_FEATURES: Sequence[str] = ['Type', 'Tool_state']
+DERIVED_NUMERIC_COLS: Sequence[str] = [
+    "Temp_diff",
+    "Torque_per_rpm",
+]
+
+DERIVED_CATEGORICAL_COLS: Sequence[str] = [
+    "Tool_state",
+]
+
+MODEL_NUMERIC_COLS: Sequence[str] = [*RAW_NUMERIC_COLS, *DERIVED_NUMERIC_COLS]
+MODEL_CATEGORICAL_COLS: Sequence[str] = [*RAW_CATEGORICAL_COLS, *DERIVED_CATEGORICAL_COLS]
 
 
-def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Return a dataframe ready for modeling with scaled numeric and encoded categorical features."""
+def add_derived_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Add derived features used by the model."""
 
-    df_copy = df.copy()
+    required = set(RAW_NUMERIC_COLS) | set(RAW_CATEGORICAL_COLS)
+    missing = sorted(required - set(df.columns))
+    if missing:
+        raise ValueError(f"Missing required input columns: {missing}")
 
-    scaler = StandardScaler()
-    df_copy[NUMERIC_FEATURES] = scaler.fit_transform(df_copy[NUMERIC_FEATURES])
+    out = df.copy()
+    out["Temp_diff"] = out["Process temperature [K]"] - out["Air temperature [K]"]
 
-    ohe = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
-    cat_array = ohe.fit_transform(df_copy[CATEGORICAL_FEATURES])
-    cat_cols = ohe.get_feature_names_out(CATEGORICAL_FEATURES)
-    cat_df = pd.DataFrame(cat_array, columns=cat_cols, index=df_copy.index)
+    rpm = out["Rotational speed [rpm]"].replace(0, np.nan)
+    out["Torque_per_rpm"] = out["Torque [Nm]"] / rpm
 
-    df_prepared = pd.concat([df_copy.drop(columns=CATEGORICAL_FEATURES), cat_df], axis=1)
-    return df_prepared
+    wear = out["Tool wear [min]"]
+    out["Tool_state"] = pd.cut(
+        wear,
+        bins=[0, 50, 150, np.inf],
+        labels=["Nuevo", "Medio", "Viejo"],
+        right=False,
+        include_lowest=True,
+    )
+    return out
+
+
+def build_preprocessor() -> Pipeline:
+    """Return a preprocessing pipeline (derived features + impute + scale/encode)."""
+
+    numeric_pipe = Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
+        ]
+    )
+    categorical_pipe = Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
+        ]
+    )
+
+    column_transformer = ColumnTransformer(
+        transformers=[
+            ("num", numeric_pipe, list(MODEL_NUMERIC_COLS)),
+            ("cat", categorical_pipe, list(MODEL_CATEGORICAL_COLS)),
+        ],
+        remainder="drop",
+        verbose_feature_names_out=False,
+    )
+
+    return Pipeline(
+        steps=[
+            ("derived", FunctionTransformer(add_derived_features, validate=False)),
+            ("preprocess", column_transformer),
+        ]
+    )
