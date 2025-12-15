@@ -10,8 +10,14 @@ def main(in_path='data/ai4i2020.csv', out_path='data/ai4i_clean.csv'):
 	imputer = SimpleImputer(strategy='median')
 	df[num_cols] = imputer.fit_transform(df[num_cols])
 
+	# columnas derivadas
+	df['Temp_diff'] = df['Process temperature [K]'] - df['Air temperature [K]']
+	df['Torque_per_rpm'] = df['Torque [Nm]'] / df['Rotational speed [rpm]'].replace(0, 1)
+	df['Tool_state'] = pd.cut(df['Tool wear [min]'], [0, 50, 150, df['Tool wear [min]'].max()+1], labels=['Nuevo', 'Medio', 'Viejo'], right=False)
+
 	df.to_csv(out_path, index=False)
 	print("Saved", out_path)
+	print(df.head())
 
 if __name__ == '__main__':
 	import argparse
