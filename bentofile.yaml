@@ -1,0 +1,15 @@
+service: "bentoml_service.service:svc"
+description: "AI4I predictive maintenance Bento (configurable modelo binario/multiclase)"
+labels:
+  owner: "proyecto_industria"
+  stage: "dev"
+include:
+  - "bentoml_service/"
+  - "models/*.joblib"
+  - "src/"
+  - "requirements.txt"
+python:
+  requirements_txt: "requirements.txt"
+envs:
+  - name: "BENTO_MODEL_PATH"
+    value: "models/model_binary_rf.joblib"

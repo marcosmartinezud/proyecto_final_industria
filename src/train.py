@@ -57,13 +57,28 @@ def _default_drop_columns(df: pd.DataFrame) -> list[str]:
 	return [c for c in drop if c in df.columns]
 
 
-def _build_model(model_type: ModelType, random_state: int) -> object:
+def _build_model(model_type: ModelType, random_state: int, hyperparams: dict | None = None) -> object:
+	# Arma el modelo con hiperparámetros opcionales si se pasan.
+
+	hyperparams = hyperparams or {}
 	if model_type == "rf":
-		return RandomForestClassifier(n_estimators=300, random_state=random_state)
+		return RandomForestClassifier(
+			n_estimators=hyperparams.get("n_estimators", 300),
+			max_depth=hyperparams.get("max_depth"),
+			random_state=random_state,
+		)
 	if model_type == "dt":
-		return DecisionTreeClassifier(random_state=random_state)
+		return DecisionTreeClassifier(
+			max_depth=hyperparams.get("max_depth"),
+			random_state=random_state,
+		)
 	if model_type == "logreg":
-		return LogisticRegression(max_iter=2000, solver="lbfgs", random_state=random_state)
+		return LogisticRegression(
+			max_iter=2000,
+			solver="lbfgs",
+			C=hyperparams.get("C", 1.0),
+			random_state=random_state,
+		)
 	raise ValueError(f"Unknown model type: {model_type}")
 
 
@@ -73,6 +88,7 @@ def train(
 	model_type: ModelType = "rf",
 	test_size: float = 0.2,
 	random_state: int = 42,
+	hyperparams: dict | None = None,
 ) -> Path:
 	if in_path is None:
 		in_path = data_dir() / "ai4i2020.csv"
@@ -91,7 +107,7 @@ def train(
 	)
 
 	preprocessor = build_preprocessor()
-	model = _build_model(model_type=model_type, random_state=random_state)
+	model = _build_model(model_type=model_type, random_state=random_state, hyperparams=hyperparams)
 	pipeline = Pipeline(steps=[("prep", preprocessor), ("model", model)])
 
 	pipeline.fit(X_train, y_train)
@@ -136,4 +152,3 @@ def main() -> None:
 
 if __name__ == "__main__":
 	main()
-

@@ -10,7 +10,7 @@ from src.utils import data_dir
 
 
 def main(in_path: str | Path | None = None, out_path: str | Path | None = None) -> Path:
-	"""Clean raw AI4I dataset for analysis/EDA."""
+	# Limpia el dataset AI4I y deja un CSV listo para análisis/EDA.
 
 	if in_path is None:
 		in_path = data_dir() / 'ai4i2020.csv'
@@ -40,5 +40,3 @@ if __name__ == '__main__':
 	parser.add_argument('out_path', nargs='?', default='data/ai4i_clean.csv', help='Output CSV path')
 	args = parser.parse_args()
 	main(args.in_path, args.out_path)
-
-

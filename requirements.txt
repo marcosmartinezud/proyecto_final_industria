@@ -3,8 +3,7 @@ numpy
 scikit-learn
 joblib
 streamlit
-bentoml
+bentoml<1.4
 requests
 matplotlib
 seaborn
-

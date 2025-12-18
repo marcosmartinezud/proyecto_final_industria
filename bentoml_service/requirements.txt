@@ -1,7 +1,6 @@
-# Keep this aligned with the root requirements.txt
+# Mantenerlo igual que el requirements.txt de la raíz
 pandas
 numpy
 scikit-learn
 joblib
-bentoml
-
+bentoml<1.4

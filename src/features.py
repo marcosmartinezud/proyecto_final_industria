@@ -1,9 +1,5 @@
-"""Feature engineering and preprocessing pipeline.
-
-Key design choice:
-- We build a scikit-learn Pipeline that includes feature creation + preprocessing.
-- This avoids data leakage (fit only on train) and makes inference reproducible.
-"""
+# Pipeline de features y preprocesamiento.
+# Uso: creo features derivadas y evito fuga de datos con un Pipeline de sklearn.
 
 from __future__ import annotations
 
@@ -43,7 +39,7 @@ MODEL_CATEGORICAL_COLS: Sequence[str] = [*RAW_CATEGORICAL_COLS, *DERIVED_CATEGOR
 
 
 def add_derived_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Add derived features used by the model."""
+    # Agrega las features derivadas que usa el modelo.
 
     required = set(RAW_NUMERIC_COLS) | set(RAW_CATEGORICAL_COLS)
     missing = sorted(required - set(df.columns))
@@ -68,7 +64,7 @@ def add_derived_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_preprocessor() -> Pipeline:
-    """Return a preprocessing pipeline (derived features + impute + scale/encode)."""
+    # Devuelve un pipeline de preprocesado (derivadas + imputar + escalar/one-hot).
 
     numeric_pipe = Pipeline(
         steps=[

@@ -4,8 +4,7 @@ from pathlib import Path
 
 
 def project_root() -> Path:
-	"""Return repo root path (folder that contains `src/`)."""
-
+	# Devuelve la ruta raíz del repo
 	return Path(__file__).resolve().parents[1]
 
 
@@ -20,4 +19,3 @@ def models_dir() -> Path:
 def ensure_dir(path: Path) -> Path:
 	path.mkdir(parents=True, exist_ok=True)
 	return path
-
